@@ -22,6 +22,8 @@ import {
   Sparkles,
   ChevronRight,
   AlertTriangle,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { StudentProfile, UserExamAttempt } from '../types/olympiad';
 import { formatDuration } from '../utils/olympiadRules';
@@ -51,6 +53,13 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
   const [editingGoal, setEditingGoal] = useState<boolean>(false);
   const [customGoal, setCustomGoal] = useState<number>(profile.dailyGoalTarget || 10);
   const [goalSavedMsg, setGoalSavedMsg] = useState<string | null>(null);
+
+  // Delete child profile state
+  const [childToDelete, setChildToDelete] = useState<any | null>(null);
+  const [deletePassword, setDeletePassword] = useState<string>('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [deletedMsg, setDeletedMsg] = useState<string | null>(null);
 
   // Fetch children for parent dashboard
   useEffect(() => {
@@ -110,6 +119,61 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
       }
     } catch (err) {
       console.error('Failed to update goal:', err);
+    }
+  };
+
+  const openDeleteDialog = (child: any) => {
+    setChildToDelete(child);
+    setDeletePassword('');
+    setDeleteError(null);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setChildToDelete(null);
+    setDeletePassword('');
+    setDeleteError(null);
+  };
+
+  const handleDeleteChild = async () => {
+    if (!childToDelete || !profile.id) return;
+    if (!deletePassword.trim()) {
+      setDeleteError('Masukkan password akun orang tua untuk konfirmasi.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/parent/children/${encodeURIComponent(childToDelete.id)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentId: profile.id, password: deletePassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeleteError(data.error || 'Gagal menghapus profil anak.');
+        return;
+      }
+
+      const remaining = childrenList.filter((c) => c.id !== childToDelete.id);
+      setChildrenList(remaining);
+      if (selectedChild?.id === childToDelete.id) {
+        if (remaining.length > 0) {
+          handleSelectChild(remaining[0]);
+        } else {
+          setSelectedChild(null);
+          setChildAttempts([]);
+        }
+      }
+      setDeletedMsg(`Profil ${childToDelete.name} beserta seluruh riwayat belajarnya telah dihapus.`);
+      setTimeout(() => setDeletedMsg(null), 4000);
+      setChildToDelete(null);
+      setDeletePassword('');
+    } catch (err) {
+      console.error('Failed to delete child profile:', err);
+      setDeleteError('Tidak dapat terhubung ke server. Coba lagi.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -216,6 +280,9 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
                 Pilih Profil Anak untuk Dipantau:
               </span>
               <div className="flex flex-wrap items-center gap-2">
+                {childrenList.length === 0 && (
+                  <span className="text-xs text-slate-500">Belum ada profil anak yang terdaftar.</span>
+                )}
                 {childrenList.map((child) => {
                   const isSelected = selectedChild?.id === child.id;
                   return (
@@ -281,8 +348,109 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
                     ✓ {goalSavedMsg}
                   </span>
                 )}
+                <button
+                  onClick={() => openDeleteDialog(selectedChild)}
+                  className="self-end text-rose-600 hover:text-rose-700 hover:underline font-bold text-[11px] flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Hapus Profil {selectedChild.name.split(' ')[0]}
+                </button>
               </div>
             )}
+          </div>
+
+          {deletedMsg && (
+            <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+              ✓ {deletedMsg}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete child confirmation dialog */}
+      {isParent && childToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4"
+          onClick={closeDeleteDialog}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-child-title"
+            className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <h3 id="delete-child-title" className="text-base font-extrabold text-slate-900">
+                  Hapus profil {childToDelete.name}?
+                </h3>
+              </div>
+              <button
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-40"
+                aria-label="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-600 space-y-2 leading-relaxed">
+              <p>
+                Akun <strong>{childToDelete.username}</strong> ({childToDelete.school_grade}) akan dihapus permanen
+                beserta <strong>{childToDelete.total_simulations || 0} riwayat simulasi</strong>, statistik latihan,
+                dan streak belajarnya.
+              </p>
+              <p className="font-semibold text-rose-700">Tindakan ini tidak dapat dibatalkan.</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleDeleteChild();
+              }}
+              className="space-y-3"
+            >
+              <label className="block">
+                <span className="text-xs font-bold text-slate-700 block mb-1.5">
+                  Masukkan password akun orang tua untuk konfirmasi
+                </span>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  autoFocus
+                  autoComplete="current-password"
+                  disabled={deleting}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-rose-500"
+                />
+              </label>
+
+              {deleteError && <p className="text-xs font-semibold text-rose-600">{deleteError}</p>}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeDeleteDialog}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 disabled:opacity-40"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 disabled:opacity-60"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {deleting ? 'Menghapus...' : 'Hapus Permanen'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
