@@ -215,7 +215,7 @@ export default function App() {
               </button>
             )}
             <span className="text-slate-300">|</span>
-            <span className="text-slate-600 font-medium">Didukung Pembina AI Gemini 3.8 Flash</span>
+            <span className="text-slate-600 font-medium">Didukung Pembina AI Model GLM (SumoPod)</span>
           </div>
         </div>
       </footer>

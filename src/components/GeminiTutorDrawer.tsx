@@ -65,7 +65,7 @@ Di mana bagian yang membuatmu ragu atau bingung? Kakak Guru siap jelaskan langka
     setErrorMsg(null);
 
     try {
-      const response = await fetch('/api/gemini/chat', {
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,7 +96,7 @@ Di mana bagian yang membuatmu ragu atau bingung? Kakak Guru siap jelaskan langka
       ]);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg('Gagal memuat balasan dari Guru AI Gemini. Silakan coba lagi.');
+      setErrorMsg('Gagal memuat balasan dari Guru AI GLM. Silakan coba lagi.');
       setMessages((prev) => [
         ...prev,
         {
@@ -131,9 +131,9 @@ Di mana bagian yang membuatmu ragu atau bingung? Kakak Guru siap jelaskan langka
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white">Guru Pembina AI Gemini</h3>
+                <h3 className="font-bold text-base text-white">Guru Pembina AI GLM</h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-400 text-slate-950 uppercase tracking-wider">
-                  Aktif
+                  SumoPod AI
                 </span>
               </div>
               <p className="text-xs text-indigo-100">Bimbingan komprehensif olimpiade matematika SD</p>
@@ -295,7 +295,7 @@ Di mana bagian yang membuatmu ragu atau bingung? Kakak Guru siap jelaskan langka
             </button>
           </form>
           <p className="text-[10px] text-slate-400 mt-2 text-center">
-            Didukung oleh Gemini 3.8 Flash • Dirancang khusus untuk pembinaan OSN SD
+            Didukung oleh GLM Model via SumoPod AI • Dirancang khusus untuk pembinaan OSN SD
           </p>
         </div>
       </div>

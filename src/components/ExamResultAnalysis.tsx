@@ -72,7 +72,7 @@ export const ExamResultAnalysis: React.FC<ExamResultAnalysisProps> = ({
       title: 'Peserta Berpotensi 🌱',
       badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
       gradient: 'from-emerald-600 to-teal-700',
-      text: 'Langkah awal yang baik! Pelajari pembahasan dan tanyakan materi ke Guru AI Gemini.',
+      text: 'Langkah awal yang baik! Pelajari pembahasan dan tanyakan materi ke Guru AI GLM.',
     },
   }[summary.medal];
 
@@ -277,7 +277,7 @@ export const ExamResultAnalysis: React.FC<ExamResultAnalysisProps> = ({
           <div className="p-4 bg-slate-900 text-white rounded-2xl text-xs space-y-2">
             <div className="flex items-center gap-2 font-bold text-amber-400">
               <Bot className="w-4 h-4" />
-              Fitur Chat Guru AI Gemini
+              Fitur Chat Guru AI GLM (SumoPod)
             </div>
             <p className="text-slate-300 leading-relaxed">
               Klik tombol <strong>"Tanya Guru AI"</strong> pada nomor soal di bawah untuk berdialog interaktif, meminta analogi sederhana, atau menguji pemahaman dengan soal baru!
@@ -445,7 +445,7 @@ export const ExamResultAnalysis: React.FC<ExamResultAnalysisProps> = ({
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all"
                   >
                     <Bot className="w-4 h-4 text-amber-300" />
-                    Tanya Guru AI Gemini (Bahas Detail)
+                    Tanya Guru AI GLM (Bahas Detail)
                   </button>
                 </div>
               </div>

@@ -405,9 +405,84 @@ app.post('/api/drill-progress', (req, res) => {
 });
 
 // ==========================================
-// GEMINI AI TUTOR CHAT ENDPOINT
+// SUMOPOD GLM & GEMINI AI TUTOR CHAT ENDPOINTS
 // ==========================================
-app.post('/api/gemini/chat', async (req, res) => {
+
+async function callSumoPodGLM({
+  systemInstruction,
+  messages,
+  userPrompt,
+}: {
+  systemInstruction: string;
+  messages?: Array<{ role: 'user' | 'model'; text: string }>;
+  userPrompt: string;
+}): Promise<{ reply: string; model: string } | null> {
+  const apiKey = process.env.SUMOPOD_API_KEY;
+  if (!apiKey) return null;
+
+  const baseUrl = (process.env.SUMOPOD_BASE_URL || 'https://ai.sumopod.com/v1').replace(/\/$/, '');
+  const model = process.env.SUMOPOD_MODEL || 'glm-4';
+
+  const formattedMessages: Array<{ role: string; content: string }> = [
+    { role: 'system', content: systemInstruction },
+  ];
+
+  if (messages && Array.isArray(messages)) {
+    const recent = messages.slice(-6);
+    for (const m of recent) {
+      formattedMessages.push({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.text,
+      });
+    }
+  }
+
+  formattedMessages.push({
+    role: 'user',
+    content: userPrompt,
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: formattedMessages,
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`SumoPod GLM API error (${response.status}):`, errText);
+      return null;
+    }
+
+    const data: any = await response.json();
+    const reply = data?.choices?.[0]?.message?.content;
+    if (reply && typeof reply === 'string' && reply.trim()) {
+      return { reply: reply.trim(), model };
+    }
+    return null;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    console.warn('SumoPod GLM request failed or timed out:', err?.message);
+    return null;
+  }
+}
+
+async function handleAIChatRequest(req: express.Request, res: express.Response) {
   try {
     const {
       question,
@@ -419,6 +494,7 @@ app.post('/api/gemini/chat', async (req, res) => {
       officialExplanation,
       tipsTrik,
       message,
+      history,
     } = req.body;
 
     if (!message) {
@@ -445,26 +521,7 @@ ${options && Array.isArray(options) && options.length > 0 ? `- Pilihan Jawaban:\
 - Trik Cepat Resmi: ${tipsTrik}
 `;
 
-    const fallbackTutorReply = generatePedagogicalResponse({
-      topic,
-      difficulty,
-      question,
-      userAnswer,
-      correctAnswer,
-      officialExplanation,
-      tipsTrik,
-      message,
-    });
-
-    if (!ai || !process.env.GEMINI_API_KEY) {
-      return res.json({
-        reply: fallbackTutorReply,
-        source: 'smart_tutor_fallback',
-      });
-    }
-
-    try {
-      const promptText = `Peran: Kamu adalah Guru Pembina Olimpiade Matematika SD.
+    const promptText = `Peran: Kamu adalah Guru Pembina Olimpiade Matematika SD.
 Konteks Soal:
 Topik: ${topic || 'Olimpiade SD'}
 Soal: ${question}
@@ -479,36 +536,71 @@ Pertanyaan Murid:
 
 Berikan bimbingan ramah anak SD usia 9-12 tahun. Singkat, jelas, gunakan poin-poin terstruktur, dan berikan trik cepat.`;
 
-      const apiCallPromise = (async () => {
-        try {
-          return await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: promptText,
-            config: { systemInstruction },
-          });
-        } catch (flashErr) {
-          return await ai.models.generateContent({
-            model: 'gemini-3.1-flash-lite',
-            contents: promptText,
-            config: { systemInstruction },
-          });
-        }
-      })();
+    const fallbackTutorReply = generatePedagogicalResponse({
+      topic,
+      difficulty,
+      question,
+      userAnswer,
+      correctAnswer,
+      officialExplanation,
+      tipsTrik,
+      message,
+    });
 
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('API Timeout')), 6000)
-      );
-
-      const response: any = await Promise.race([apiCallPromise, timeoutPromise]);
-      const reply = response?.text?.trim() || fallbackTutorReply;
-      return res.json({ reply, source: 'gemini' });
-    } catch (apiErr: any) {
-      console.warn('Gemini API call timed out or failed, using smart pedagogical tutor:', apiErr?.message);
-      return res.json({
-        reply: fallbackTutorReply,
-        source: 'smart_tutor_fallback',
+    // 1. Try SumoPod GLM Model first if API key is provided
+    if (process.env.SUMOPOD_API_KEY) {
+      const sumopodRes = await callSumoPodGLM({
+        systemInstruction,
+        messages: history,
+        userPrompt: promptText,
       });
+
+      if (sumopodRes) {
+        return res.json({
+          reply: sumopodRes.reply,
+          source: 'sumopod_glm',
+          model: sumopodRes.model,
+        });
+      }
     }
+
+    // 2. Fallback to Gemini API if configured
+    if (ai && process.env.GEMINI_API_KEY) {
+      try {
+        const apiCallPromise = (async () => {
+          try {
+            return await ai!.models.generateContent({
+              model: 'gemini-3.8-flash',
+              contents: promptText,
+              config: { systemInstruction },
+            });
+          } catch (flashErr) {
+            return await ai!.models.generateContent({
+              model: 'gemini-3.1-flash-lite',
+              contents: promptText,
+              config: { systemInstruction },
+            });
+          }
+        })();
+
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('API Timeout')), 6000)
+        );
+
+        const response: any = await Promise.race([apiCallPromise, timeoutPromise]);
+        const reply = response?.text?.trim() || fallbackTutorReply;
+        return res.json({ reply, source: 'gemini', model: 'gemini-3.8-flash' });
+      } catch (apiErr: any) {
+        console.warn('Gemini call failed/timed out, using smart tutor fallback:', apiErr?.message);
+      }
+    }
+
+    // 3. Resilient Smart Pedagogical Tutor Fallback
+    return res.json({
+      reply: fallbackTutorReply,
+      source: 'smart_tutor_fallback',
+      model: 'glm_pedagogical_engine',
+    });
   } catch (error: any) {
     console.error('Error in chat handler:', error);
     return res.status(500).json({
@@ -516,7 +608,11 @@ Berikan bimbingan ramah anak SD usia 9-12 tahun. Singkat, jelas, gunakan poin-po
       details: error.message,
     });
   }
-});
+}
+
+// Support both endpoint paths
+app.post('/api/ai/chat', handleAIChatRequest);
+app.post('/api/gemini/chat', handleAIChatRequest);
 
 function generatePedagogicalResponse(ctx: {
   topic?: string;
