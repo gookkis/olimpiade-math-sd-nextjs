@@ -166,6 +166,47 @@ app.get('/api/parent/children', (_req, res) => {
   }
 });
 
+// Parent capability: permanently delete a child profile with all of its learning data.
+// The parent must confirm with their own password because this cannot be undone.
+app.delete('/api/parent/children/:childId', (req, res) => {
+  try {
+    const { childId } = req.params;
+    const { parentId, password } = req.body ?? {};
+    if (!parentId || !password) {
+      return res.status(400).json({ error: 'ID orang tua dan password wajib diisi' });
+    }
+
+    const parent: any = db.prepare('SELECT id, role, password FROM users WHERE id = ?').get(parentId);
+    if (!parent || parent.role !== 'parent') {
+      return res.status(403).json({ error: 'Hanya akun orang tua yang dapat menghapus profil anak' });
+    }
+    if (parent.password !== hashPassword(String(password))) {
+      return res.status(401).json({ error: 'Password orang tua salah' });
+    }
+
+    const child: any = db.prepare('SELECT id, name, role FROM users WHERE id = ?').get(childId);
+    if (!child) {
+      return res.status(404).json({ error: 'Profil anak tidak ditemukan' });
+    }
+    if (child.role === 'parent') {
+      return res.status(400).json({ error: 'Akun orang tua tidak dapat dihapus dari menu ini' });
+    }
+
+    // foreign_keys pragma is off, so remove dependent rows explicitly in one transaction
+    const removed = db.transaction(() => {
+      const attempts = db.prepare('DELETE FROM exam_attempts WHERE user_id = ?').run(childId).changes;
+      const drills = db.prepare('DELETE FROM drill_stats WHERE user_id = ?').run(childId).changes;
+      db.prepare('DELETE FROM users WHERE id = ?').run(childId);
+      return { attempts, drills };
+    })();
+
+    return res.json({ success: true, deletedChildId: childId, name: child.name, removed });
+  } catch (err: any) {
+    console.error('Error deleting child profile:', err);
+    return res.status(500).json({ error: 'Gagal menghapus profil anak' });
+  }
+});
+
 // Parent capability: Update student's daily goal target
 app.post('/api/users/update-goal', (req, res) => {
   try {
