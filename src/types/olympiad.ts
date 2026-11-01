@@ -25,8 +25,10 @@ export interface DrillProgress {
 }
 
 export interface StudentProfile {
+  id?: string;
   name: string;
   schoolGrade: string; // e.g. "SD Kelas 5"
+  role?: 'student' | 'parent';
   streak: number;
   lastActiveDate: string | null;
   dailyGoalTarget: number; // e.g. 10 questions per day

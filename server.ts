@@ -144,6 +144,42 @@ app.get('/api/auth/user/:id', (req, res) => {
   }
 });
 
+// Parent monitoring: get all registered children with summary stats
+app.get('/api/parent/children', (_req, res) => {
+  try {
+    const students = db.prepare(`
+      SELECT 
+        u.id, u.username, u.name, u.school_grade, u.role, u.streak, u.last_active_date, 
+        u.daily_goal_target, u.daily_goal_completed_today, u.created_at,
+        COUNT(a.id) as total_simulations
+      FROM users u
+      LEFT JOIN exam_attempts a ON u.id = a.user_id
+      WHERE u.role = 'student' OR u.role IS NULL
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+    `).all();
+
+    return res.json({ students });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Gagal memuat data anak', details: err.message });
+  }
+});
+
+// Parent capability: Update student's daily goal target
+app.post('/api/users/update-goal', (req, res) => {
+  try {
+    const { userId, dailyGoalTarget } = req.body;
+    if (!userId || !dailyGoalTarget) {
+      return res.status(400).json({ error: 'Data tidak lengkap' });
+    }
+    const target = Math.max(1, parseInt(dailyGoalTarget, 10));
+    db.prepare('UPDATE users SET daily_goal_target = ? WHERE id = ?').run(target, userId);
+    return res.json({ success: true, dailyGoalTarget: target });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Gagal memperbarui target harian' });
+  }
+});
+
 // ==========================================
 // QUESTION BANK ROUTES (1500 SOAL)
 // ==========================================

@@ -39,8 +39,10 @@ export default function App() {
 
   // Construct current student profile
   const profile: StudentProfile = {
+    id: currentUser?.id,
     name: currentUser?.name || 'Siswa Juara OSN',
     schoolGrade: currentUser?.schoolGrade || 'SD Kelas 5',
+    role: currentUser?.role || 'student',
     streak: currentUser?.streak || 1,
     lastActiveDate: currentUser?.lastActiveDate || null,
     dailyGoalTarget: currentUser?.dailyGoalTarget || 10,
@@ -180,6 +182,10 @@ export default function App() {
             onStartDrill={() => {
               setDrillInitialQuestion(null);
               setActiveTab('drill');
+            }}
+            onSwitchToChild={(childUser) => {
+              handleLoginSuccess(childUser);
+              setActiveTab('simulation');
             }}
           />
         )}
