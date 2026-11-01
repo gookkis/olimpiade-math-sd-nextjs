@@ -301,7 +301,7 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
               </span>
             </div>
             <p className="text-indigo-200 text-xs sm:text-sm">
-              Persiapan Menuju Olimpiade Sains Nasional (OSN) & SASMO Matematika SD
+              Persiapan Menuju Olimpiade Sains Nasional (OSN) & Islamic Youth Festival (IYF) Matematika SD
             </p>
           </div>
         </div>
@@ -620,10 +620,10 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({
           <div className="p-4 bg-white rounded-2xl border border-indigo-100 shadow-2xs space-y-1.5">
             <div className="flex items-center gap-2 font-bold text-indigo-900">
               <Target className="w-4 h-4 text-emerald-600" />
-              4. Ajarkan Strategi Skor OSN (+4 / -1)
+              4. Ajarkan Strategi Skor OSN (Berbobot)
             </div>
             <p className="text-slate-600 leading-relaxed">
-              Ingatkan anak bahwa dalam olimpiade resmi, menebak secara sembarangan akan mengurangi nilai (-1). Ajarkan anak untuk berani melewati soal yang meragukan.
+              Pada OSN SD 2026, jawaban salah tidak dikurangi nilai, sedangkan soal sukar bernilai 1,5 kali soal mudah. Ajarkan anak untuk mengisi semua soal dan menyisihkan waktu untuk soal sukar.
             </p>
           </div>
         </div>

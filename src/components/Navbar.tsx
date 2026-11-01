@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Olimpiade Math SD
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-950 uppercase tracking-wider">
-                  OSN & SASMO
+                  OSN & IYF
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium">

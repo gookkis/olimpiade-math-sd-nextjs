@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { UserExamAttempt } from '../types/olympiad';
 import { OlympiadQuestion } from '../data/questionBank';
-import { formatDuration } from '../utils/olympiadRules';
+import { formatDuration, scoringRuleLabel } from '../utils/olympiadRules';
 import { GeminiTutorDrawer } from './GeminiTutorDrawer';
 
 interface ExamResultAnalysisProps {
@@ -135,12 +135,12 @@ export const ExamResultAnalysis: React.FC<ExamResultAnalysisProps> = ({
             <span className="text-xs text-slate-500 font-semibold block mb-1">Skor Resmi OSN</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl sm:text-3xl font-black text-indigo-700">
-                {summary.rawScore}
+                {summary.rawScore.toLocaleString('id-ID')}
               </span>
-              <span className="text-xs text-slate-400">/ {summary.maxPossibleScore}</span>
+              <span className="text-xs text-slate-400">/ {summary.maxPossibleScore.toLocaleString('id-ID')}</span>
             </div>
             <span className="text-[11px] text-slate-500 block mt-1">
-              (+4 Benar, -1 Salah)
+              ({scoringRuleLabel(summary.scoringModel)})
             </span>
           </div>
 

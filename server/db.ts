@@ -66,6 +66,11 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_attempts_user_id ON exam_attempts(user_id);
 
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS drill_stats (
       user_id TEXT NOT NULL,
       topic TEXT NOT NULL,
@@ -78,4 +83,11 @@ export function initDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+
+  // Migration: competition level (Kabupaten/Kota, Provinsi, Nasional) for older databases
+  const questionCols = db.prepare('PRAGMA table_info(questions)').all() as { name: string }[];
+  if (!questionCols.some((c) => c.name === 'level')) {
+    db.exec(`ALTER TABLE questions ADD COLUMN level TEXT NOT NULL DEFAULT 'Kabupaten/Kota'`);
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_questions_level ON questions(level)');
 }

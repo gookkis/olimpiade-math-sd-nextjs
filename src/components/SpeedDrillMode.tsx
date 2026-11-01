@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { OlympiadQuestion, OLYMPIAD_TOPICS, QUESTION_BANK, SimilarPracticeQuestion } from '../data/questionBank';
 import { GeminiTutorDrawer } from './GeminiTutorDrawer';
+import { isAnswerCorrect } from '../utils/olympiadRules';
 
 interface SpeedDrillModeProps {
   initialQuestion?: OlympiadQuestion | null;
@@ -84,7 +85,7 @@ export const SpeedDrillMode: React.FC<SpeedDrillModeProps> = ({
     if (timerRef.current) clearInterval(timerRef.current);
     setIsAnswerSubmitted(true);
 
-    const isCorrect = selectedOption.toUpperCase() === currentQData.correctAnswer.toUpperCase();
+    const isCorrect = isAnswerCorrect(selectedOption, currentQData.correctAnswer);
     setSessionAnswered((prev) => prev + 1);
     setSessionTotalSeconds((prev) => prev + secondsElapsed);
 
@@ -130,7 +131,7 @@ export const SpeedDrillMode: React.FC<SpeedDrillModeProps> = ({
     }
   };
 
-  const isUserCorrect = isAnswerSubmitted && selectedOption.toUpperCase() === currentQData.correctAnswer.toUpperCase();
+  const isUserCorrect = isAnswerSubmitted && isAnswerCorrect(selectedOption, currentQData.correctAnswer);
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-6">
