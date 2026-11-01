@@ -16,7 +16,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { EXAM_PRESETS, ExamPreset, OlympiadQuestion, QUESTION_BANK } from '../data/questionBank';
-import { calculateOlympiadScore, formatDuration, QuestionResult } from '../utils/olympiadRules';
+import { calculateOlympiadScore, formatDuration, isAnswerCorrect, QuestionResult } from '../utils/olympiadRules';
 import { ScratchpadModal } from './ScratchpadModal';
 import { UserExamAttempt } from '../types/olympiad';
 
@@ -56,7 +56,8 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
 
     let questionsToUse: OlympiadQuestion[] = [];
     try {
-      const res = await fetch(`/api/questions/exam?count=${count}`);
+      const levelParam = preset.level ? `&level=${encodeURIComponent(preset.level)}` : '';
+      const res = await fetch(`/api/questions/exam?count=${count}${levelParam}`);
       const data = await res.json();
       if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
         questionsToUse = data.questions;
@@ -147,7 +148,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
     // Calculate question results
     const results: QuestionResult[] = examQuestions.map((q) => {
       const userAns = (answers[q.id] || '').trim();
-      const isCorrect = userAns.toUpperCase() === q.correctAnswer.toUpperCase();
+      const isCorrect = isAnswerCorrect(userAns, q.correctAnswer);
       const timeSpent = questionTimeMap[q.id] || 30; // fallback
 
       return {
@@ -161,7 +162,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
       };
     });
 
-    const summary = calculateOlympiadScore(results, 'OSN_STANDARD');
+    const summary = calculateOlympiadScore(results, 'OSN_2026_WEIGHTED');
 
     const attempt: UserExamAttempt = {
       id: `attempt-${Date.now()}`,
@@ -198,7 +199,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
               Simulasi Ujian Olimpiade Matematika SD
             </h1>
             <p className="text-indigo-100 text-sm sm:text-base leading-relaxed">
-              Uji kemampuan dengan sistem waktu riil, navigasi soal standar kompetisi nasional (OSN) dan internasional (SASMO), serta evaluasi otomatis per topik.
+              Uji kemampuan dengan sistem waktu riil, format soal berjenjang OSN SD & IYF JSIT (Kabupaten/Kota, Provinsi, Nasional), serta evaluasi otomatis per topik.
             </p>
           </div>
         </div>
@@ -255,7 +256,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span><strong>Benar: +4 Poin</strong>, <strong>Salah: -1 Poin</strong>, <strong>Kosong: 0 Poin</strong></span>
+              <span><strong>Benar: 1 poin × bobot</strong> (Mudah 1 · Sedang 1,25 · Sukar 1,5), <strong>Salah/Kosong: 0</strong></span>
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />

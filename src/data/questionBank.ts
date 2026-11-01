@@ -12,6 +12,8 @@ export interface OlympiadQuestion {
   topic: 'Bilangan & Aritmatika' | 'Aljabar & Pola Bilangan' | 'Geometri & Pengukuran' | 'Kombinatorika & Peluang' | 'Logika & Masalah HOTS';
   subtopic: string;
   difficulty: 'Mudah' | 'Sedang' | 'HOTS';
+  /** Competition level the item is modelled on (OSN/KSN & IYF tiers). */
+  level?: 'Kabupaten/Kota' | 'Provinsi' | 'Nasional';
   format: 'pilihan_ganda' | 'isian';
   question: string;
   visualDiagram?: string; // Optional ASCII or description
@@ -527,35 +529,51 @@ export interface ExamPreset {
   questionCount: number;
   description: string;
   targetLevel: string;
+  /** Restrict questions to one competition level; omitted = mixed. */
+  level?: 'Kabupaten/Kota' | 'Provinsi' | 'Nasional';
 }
+
+export const COMPETITION_LEVELS = ['Kabupaten/Kota', 'Provinsi', 'Nasional'] as const;
 
 export const EXAM_PRESETS: ExamPreset[] = [
   {
-    id: 'osn-sd-penyisihan',
-    name: 'Simulasi OSN Matematika SD (Penyisihan)',
-    badge: 'Resmi Nasional',
+    id: 'osn-sd-kabupaten',
+    name: 'Simulasi OSN-K / IYF Tingkat Daerah',
+    badge: 'Kabupaten/Kota',
     durationMinutes: 60,
-    questionCount: 10,
-    description: 'Format baku babak penyisihan OSN: kombinasi pilihan ganda & isian dengan pembobotan benar +4, salah -1.',
+    questionCount: 30,
+    description: 'Format OSN-K SD: 30 soal pilihan ganda (8 mudah, 14 sedang, 8 sukar) dalam 60 menit, skor berbobot tanpa nilai minus. Setara babak seleksi daerah IYF JSIT.',
     targetLevel: 'SD Kelas 4, 5, 6',
+    level: 'Kabupaten/Kota',
   },
   {
     id: 'osn-sd-provinsi',
-    name: 'Simulasi OSN Matematika SD (Provinsi/Final)',
-    badge: 'Tingkat Tinggi (HOTS)',
-    durationMinutes: 90,
-    questionCount: 12,
-    description: 'Tantangan penalaran mendalam dan pemecahan masalah non-rutin dengan waktu 90 menit.',
-    targetLevel: 'SD Berprestasi / Pelatda',
+    name: 'Simulasi OSN-P / IYF Tingkat Wilayah',
+    badge: 'Provinsi',
+    durationMinutes: 60,
+    questionCount: 20,
+    description: 'Format OSN-P SD: 20 soal isian singkat (4 mudah, 8 sedang, 8 sukar) dalam 60 menit. Jawaban berupa bilangan bulat.',
+    targetLevel: 'Lolos Kabupaten/Kota',
+    level: 'Provinsi',
   },
   {
-    id: 'sasmo-primary',
-    name: 'Simulasi SASMO & Kangaroo Math (Speed Sprint)',
-    badge: 'Internasional',
+    id: 'osn-sd-nasional',
+    name: 'Simulasi OSN Nasional (Teori I)',
+    badge: 'Nasional',
+    durationMinutes: 90,
+    questionCount: 25,
+    description: 'Latihan babak teori nasional: 25 soal isian singkat tingkat HOTS (teori bilangan, kombinatorika, geometri, logika).',
+    targetLevel: 'Lolos Provinsi / Pelatnas',
+    level: 'Nasional',
+  },
+  {
+    id: 'campuran-semua-tingkat',
+    name: 'Simulasi Campuran Semua Tingkat',
+    badge: 'Campuran',
     durationMinutes: 45,
-    questionCount: 8,
-    description: 'Melatih kecepatan reflek matematika internasional dengan batas waktu ketat per soal.',
-    targetLevel: 'Primary 4 - 6',
+    questionCount: 15,
+    description: 'Soal acak dari tingkat kabupaten hingga nasional untuk mengukur kesiapan secara menyeluruh.',
+    targetLevel: 'Semua Tingkatan SD',
   },
   {
     id: 'latihan-kilat-15',
@@ -565,5 +583,6 @@ export const EXAM_PRESETS: ExamPreset[] = [
     questionCount: 5,
     description: 'Cocok untuk pemanasan harian menjaga konsistensi belajar dan mempertahankan streak harian.',
     targetLevel: 'Semua Tingkatan SD',
+    level: 'Kabupaten/Kota',
   },
 ];

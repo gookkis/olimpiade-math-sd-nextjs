@@ -209,7 +209,7 @@ export default function App() {
       <footer className="border-t border-slate-200 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
-            © 2026 Simulasi Olimpiade Matematika SD • 1.500 Bank Soal SQLite • Persiapan OSN & SASMO
+            © 2026 Simulasi Olimpiade Matematika SD • 1.500 Bank Soal SQLite • Persiapan OSN & IYF
           </p>
           <div className="flex items-center gap-3">
             {currentUser && (

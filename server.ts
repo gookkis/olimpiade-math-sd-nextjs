@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { GoogleGenAI } from '@google/genai';
 import { db, initDatabase } from './server/db';
 import { seedQuestionsIfEmpty } from './server/seedQuestions';
+import { LEVEL_DIFFICULTY_MIX } from './server/bank';
 
 dotenv.config();
 
@@ -190,7 +191,8 @@ app.get('/api/questions/stats', (_req, res) => {
     const total = (db.prepare('SELECT COUNT(*) as count FROM questions').get() as { count: number }).count;
     const byTopic = db.prepare('SELECT topic, COUNT(*) as count FROM questions GROUP BY topic').all();
     const byDifficulty = db.prepare('SELECT difficulty, COUNT(*) as count FROM questions GROUP BY difficulty').all();
-    return res.json({ total, byTopic, byDifficulty });
+    const byLevel = db.prepare('SELECT level, COUNT(*) as count FROM questions GROUP BY level').all();
+    return res.json({ total, byTopic, byDifficulty, byLevel });
   } catch (err: any) {
     return res.status(500).json({ error: 'Gagal memuat statistik soal' });
   }
@@ -199,7 +201,7 @@ app.get('/api/questions/stats', (_req, res) => {
 // Query Questions with filter & pagination
 app.get('/api/questions', (req, res) => {
   try {
-    const { topic, difficulty, search, page = '1', limit = '20' } = req.query;
+    const { topic, difficulty, level, search, page = '1', limit = '20' } = req.query;
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20));
     const offset = (pageNum - 1) * limitNum;
@@ -214,6 +216,10 @@ app.get('/api/questions', (req, res) => {
     if (difficulty && difficulty !== 'Semua') {
       conditions.push('difficulty = ?');
       params.push(difficulty);
+    }
+    if (level && level !== 'Semua') {
+      conditions.push('level = ?');
+      params.push(level);
     }
     if (search && (search as string).trim()) {
       conditions.push('(question LIKE ? OR subtopic LIKE ? OR explanation LIKE ? OR tips_trik LIKE ?)');
@@ -234,6 +240,7 @@ app.get('/api/questions', (req, res) => {
       topic: r.topic,
       subtopic: r.subtopic,
       difficulty: r.difficulty,
+      level: r.level,
       format: r.format,
       question: r.question,
       options: r.options ? JSON.parse(r.options) : [],
@@ -257,44 +264,65 @@ app.get('/api/questions', (req, res) => {
   }
 });
 
-// Random Exam Questions (Balanced across 5 pillars)
+// Exam questions: balanced across the 5 topics and, per competition level, following
+// the OSN SD 2026 difficulty mix (OSN-K 8/14/8, OSN-P 4/8/8). Ordered easy → hard.
 app.get('/api/questions/exam', (req, res) => {
   try {
-    const count = parseInt(req.query.count as string, 10) || 10;
-    const perTopic = Math.max(1, Math.floor(count / 5));
+    const count = Math.min(60, Math.max(1, parseInt(req.query.count as string, 10) || 10));
+    const level = typeof req.query.level === 'string' && req.query.level !== 'Semua' ? req.query.level : null;
 
-    const topics = [
-      'Bilangan & Aritmatika',
-      'Aljabar & Pola Bilangan',
-      'Geometri & Pengukuran',
-      'Kombinatorika & Peluang',
-      'Logika & Masalah HOTS',
+    const pool: any[] = level
+      ? db.prepare('SELECT * FROM questions WHERE level = ? ORDER BY RANDOM()').all(level)
+      : db.prepare('SELECT * FROM questions ORDER BY RANDOM()').all();
+
+    // Difficulty quotas from the level blueprint (largest-remainder rounding).
+    const mix = level ? LEVEL_DIFFICULTY_MIX[level] : undefined;
+    const diffQuota: Record<string, number> | null = mix ? {} : null;
+    if (mix && diffQuota) {
+      const entries = Object.entries(mix).map(([d, f]) => ({ d, exact: f * count, n: Math.floor(f * count) }));
+      let left = count - entries.reduce((s, e) => s + e.n, 0);
+      entries.sort((x, y) => (y.exact - y.n) - (x.exact - x.n)).forEach((e) => { if (left > 0) { e.n++; left--; } });
+      entries.forEach((e) => (diffQuota[e.d] = e.n));
+    }
+    const topicQuota = Math.ceil(count / 5);
+
+    const chosen: any[] = [];
+    const chosenIds = new Set<string>();
+    const usedSub = new Set<string>();
+    const perTopic: Record<string, number> = {};
+    const perDiff: Record<string, number> = {};
+
+    // Pass 1: all constraints + distinct subtopic. Later passes relax them one by one.
+    const passes = [
+      { sub: true, topic: true, diff: true },
+      { sub: false, topic: true, diff: true },
+      { sub: false, topic: false, diff: true },
+      { sub: false, topic: false, diff: false },
     ];
-
-    let selectedQuestions: any[] = [];
-
-    for (const top of topics) {
-      const rows = db.prepare('SELECT * FROM questions WHERE topic = ? ORDER BY RANDOM() LIMIT ?').all(top, perTopic);
-      selectedQuestions.push(...rows);
+    for (const pass of passes) {
+      for (const r of pool) {
+        if (chosen.length >= count) break;
+        if (chosenIds.has(r.id)) continue;
+        if (pass.sub && usedSub.has(r.subtopic)) continue;
+        if (pass.topic && (perTopic[r.topic] ?? 0) >= topicQuota) continue;
+        if (pass.diff && diffQuota && (perDiff[r.difficulty] ?? 0) >= (diffQuota[r.difficulty] ?? 0)) continue;
+        chosen.push(r);
+        chosenIds.add(r.id);
+        usedSub.add(r.subtopic);
+        perTopic[r.topic] = (perTopic[r.topic] ?? 0) + 1;
+        perDiff[r.difficulty] = (perDiff[r.difficulty] ?? 0) + 1;
+      }
     }
 
-    // Fill remaining if needed
-    if (selectedQuestions.length < count) {
-      const remaining = count - selectedQuestions.length;
-      const ids = selectedQuestions.map((q) => q.id);
-      const placeholders = ids.map(() => '?').join(',');
-      const extraRows = db.prepare(`SELECT * FROM questions WHERE id NOT IN (${placeholders}) ORDER BY RANDOM() LIMIT ?`).all(...ids, remaining);
-      selectedQuestions.push(...extraRows);
-    }
-
-    // Shuffle questions
-    selectedQuestions.sort(() => Math.random() - 0.5);
+    const rank: Record<string, number> = { Mudah: 0, Sedang: 1, HOTS: 2 };
+    const selectedQuestions = chosen.sort((x, y) => (rank[x.difficulty] ?? 1) - (rank[y.difficulty] ?? 1));
 
     const questions = selectedQuestions.map((r: any) => ({
       id: r.id,
       topic: r.topic,
       subtopic: r.subtopic,
       difficulty: r.difficulty,
+      level: r.level,
       format: r.format,
       question: r.question,
       options: r.options ? JSON.parse(r.options) : [],

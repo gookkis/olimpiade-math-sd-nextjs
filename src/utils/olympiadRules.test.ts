@@ -32,6 +32,23 @@ test('calculateOlympiadScore computes correct OSN score and stats', () => {
   assert.ok(summary.recommendedFocus.includes('Geometri'));
 });
 
+test('calculateOlympiadScore uses OSN 2026 difficulty weights by default (no penalty)', () => {
+  const results: QuestionResult[] = [
+    { questionId: '1', topic: 'Bilangan', difficulty: 'Mudah', isCorrect: true, timeSpentSeconds: 40, userAnswer: 'A', correctAnswer: 'A' },
+    { questionId: '2', topic: 'Bilangan', difficulty: 'Sedang', isCorrect: true, timeSpentSeconds: 60, userAnswer: '12', correctAnswer: '12' },
+    { questionId: '3', topic: 'Geometri', difficulty: 'HOTS', isCorrect: true, timeSpentSeconds: 90, userAnswer: '7', correctAnswer: '7' },
+    { questionId: '4', topic: 'Geometri', difficulty: 'HOTS', isCorrect: false, timeSpentSeconds: 90, userAnswer: '8', correctAnswer: '9' },
+    { questionId: '5', topic: 'Aljabar', difficulty: 'Sedang', isCorrect: false, timeSpentSeconds: 30, userAnswer: '', correctAnswer: '3' },
+  ];
+
+  const summary = calculateOlympiadScore(results);
+  assert.equal(summary.scoringModel, 'OSN_2026_WEIGHTED');
+  // 1 + 1.25 + 1.5 = 3.75; the wrong answer costs nothing
+  assert.equal(summary.rawScore, 3.75);
+  // 1 + 1.25 + 1.5 + 1.5 + 1.25 = 6.5
+  assert.equal(summary.maxPossibleScore, 6.5);
+});
+
 test('calculateOlympiadScore awards Gold medal for >=84%', () => {
   const results: QuestionResult[] = Array.from({ length: 10 }, (_, i) => ({
     questionId: `q-${i}`,

@@ -26,11 +26,24 @@ export interface SimulationSummary {
   timeSinkCount: number;
   fastCorrectCount: number;
   recommendedFocus: string[];
+  /** Scoring rule used; missing on attempts saved before the OSN 2026 rule was added. */
+  scoringModel?: ScoringModel;
+}
+
+export type ScoringModel = 'OSN_2026_WEIGHTED' | 'OSN_STANDARD' | 'PERCENTAGE';
+
+/** OSN SD 2026: a correct answer scores 1 point × difficulty weight; wrong/blank score 0. */
+export const OSN_2026_WEIGHTS: Record<string, number> = { Mudah: 1, Sedang: 1.25, HOTS: 1.5 };
+
+export function scoringRuleLabel(model?: ScoringModel): string {
+  if (model === 'OSN_2026_WEIGHTED') return 'Benar × bobot (Mudah 1 · Sedang 1,25 · Sukar 1,5), salah/kosong 0';
+  if (model === 'PERCENTAGE') return '1 poin per jawaban benar';
+  return '+4 Benar, -1 Salah';
 }
 
 export function calculateOlympiadScore(
   results: QuestionResult[],
-  scoringModel: 'OSN_STANDARD' | 'PERCENTAGE' = 'OSN_STANDARD'
+  scoringModel: ScoringModel = 'OSN_2026_WEIGHTED'
 ): SimulationSummary {
   const totalQuestions = results.length;
   let correctCount = 0;
@@ -82,11 +95,20 @@ export function calculateOlympiadScore(
 
   const answeredCount = correctCount + wrongCount;
 
-  // OSN scoring standard: +4 for correct, -1 for wrong, 0 for empty
+  // OSN_2026_WEIGHTED (default): weighted by difficulty, no penalty.
+  // OSN_STANDARD (legacy): +4 for correct, -1 for wrong, 0 for empty.
   let rawScore = 0;
   let maxPossibleScore = 0;
 
-  if (scoringModel === 'OSN_STANDARD') {
+  if (scoringModel === 'OSN_2026_WEIGHTED') {
+    for (const item of results) {
+      const w = OSN_2026_WEIGHTS[item.difficulty] ?? 1;
+      maxPossibleScore += w;
+      if (item.isCorrect && item.userAnswer && item.userAnswer.trim() !== '') rawScore += w;
+    }
+    rawScore = Math.round(rawScore * 100) / 100;
+    maxPossibleScore = Math.round(maxPossibleScore * 100) / 100;
+  } else if (scoringModel === 'OSN_STANDARD') {
     rawScore = correctCount * 4 - wrongCount * 1;
     maxPossibleScore = totalQuestions * 4;
   } else {
@@ -163,6 +185,7 @@ export function calculateOlympiadScore(
     unansweredCount,
     rawScore,
     maxPossibleScore,
+    scoringModel,
     percentageScore,
     totalTimeSpentSeconds,
     avgTimePerQuestionSeconds,
@@ -203,4 +226,19 @@ export function formatDuration(seconds: number): string {
   const secs = seconds % 60;
   if (mins === 0) return `${secs} detik`;
   return `${mins}m ${secs}s`;
+}
+
+/**
+ * Normalize an answer before comparison so short answers like "1.500", " 1500 " and
+ * "1500" are treated the same. Multiple-choice letters are simply upper-cased.
+ */
+export function normalizeAnswer(answer: string): string {
+  let t = (answer ?? '').trim().toUpperCase().replace(/\s+/g, '');
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  return t;
+}
+
+export function isAnswerCorrect(userAnswer: string, correctAnswer: string): boolean {
+  const u = normalizeAnswer(userAnswer);
+  return u !== '' && u === normalizeAnswer(correctAnswer);
 }

@@ -12,7 +12,7 @@ import {
   Database,
   Sparkles,
 } from 'lucide-react';
-import { OlympiadQuestion, OLYMPIAD_TOPICS, QUESTION_BANK } from '../data/questionBank';
+import { COMPETITION_LEVELS, OlympiadQuestion, OLYMPIAD_TOPICS, QUESTION_BANK } from '../data/questionBank';
 import { GeminiTutorDrawer } from './GeminiTutorDrawer';
 
 interface QuestionBankExplorerProps {
@@ -24,6 +24,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
 }) => {
   const [selectedTopic, setSelectedTopic] = useState<string>('Semua');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('Semua');
+  const [selectedLevel, setSelectedLevel] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(15);
@@ -46,6 +47,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
       });
       if (selectedTopic !== 'Semua') query.set('topic', selectedTopic);
       if (selectedDifficulty !== 'Semua') query.set('difficulty', selectedDifficulty);
+      if (selectedLevel !== 'Semua') query.set('level', selectedLevel);
       if (searchQuery.trim()) query.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/questions?${query.toString()}`);
@@ -68,7 +70,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
 
   useEffect(() => {
     loadQuestions();
-  }, [selectedTopic, selectedDifficulty, page]);
+  }, [selectedTopic, selectedDifficulty, selectedLevel, page]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +93,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500">
-              Koleksi terverifikasi standar OSN & SASMO dengan 1.500 variasi soal dan trik cepat olimpiade.
+              1.500 soal dari 150+ tipe soal berbeda, disusun berjenjang mengikuti OSN SD dan IYF JSIT: tingkat Kabupaten/Kota, Provinsi, dan Nasional.
             </p>
           </div>
 
@@ -104,7 +106,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
         </div>
 
         {/* Search & Filters */}
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           <div className="sm:col-span-2 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
@@ -149,6 +151,24 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
               <option value="HOTS">Tinggi (HOTS)</option>
             </select>
           </div>
+
+          <div>
+            <select
+              value={selectedLevel}
+              onChange={(e) => {
+                setSelectedLevel(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:outline-none focus:border-indigo-600"
+            >
+              <option value="Semua">Semua Tingkat Lomba</option>
+              {COMPETITION_LEVELS.map((lv) => (
+                <option key={lv} value={lv}>
+                  {lv}
+                </option>
+              ))}
+            </select>
+          </div>
         </form>
       </div>
 
@@ -186,6 +206,11 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {q.level && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                        {q.level}
+                      </span>
+                    )}
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                         q.difficulty === 'Mudah'
