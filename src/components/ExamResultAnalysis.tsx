@@ -358,7 +358,7 @@ export const ExamResultAnalysis: React.FC<ExamResultAnalysisProps> = ({
                     >
                       {originalIndex + 1}
                     </span>
-                    <span className="text-xs font-bold text-slate-800">{q.topic}</span>
+                    <span className="text-xs font-bold text-slate-800">{q.kisi ?? q.topic}</span>
                     <span className="text-xs text-slate-400">•</span>
                     <span className="text-xs text-slate-600">{q.subtopic}</span>
                   </div>

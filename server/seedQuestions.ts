@@ -21,9 +21,9 @@ export function seedQuestionsIfEmpty(): number {
 
   const insert = db.prepare(`
     INSERT INTO questions (
-      id, topic, subtopic, difficulty, level, format, question, options, correct_answer, explanation, tips_trik, target_seconds, similar_questions
+      id, topic, subtopic, difficulty, level, kisi, format, question, options, correct_answer, explanation, tips_trik, target_seconds, similar_questions
     ) VALUES (
-      @id, @topic, @subtopic, @difficulty, @level, @format, @question, @options, @correct_answer, @explanation, @tips_trik, @target_seconds, @similar_questions
+      @id, @topic, @subtopic, @difficulty, @level, @kisi, @format, @question, @options, @correct_answer, @explanation, @tips_trik, @target_seconds, @similar_questions
     )
   `);
 

@@ -1,5 +1,6 @@
 // Run: npx tsx server/bank/validate.ts
 import { buildQuestionBank, ALL_GENERATORS } from './index';
+import { KISI_KEYS } from './kisi';
 
 const t0 = Date.now();
 const rows = buildQuestionBank();
@@ -30,6 +31,9 @@ for (const r of rows) {
   if (!sims.length) errors.push(`${r.id}: no similar question`);
 }
 
+const genKeys = new Set(ALL_GENERATORS.map((g) => g.key));
+for (const k of KISI_KEYS) if (!genKeys.has(k)) errors.push(`kisi map references unknown generator ${k}`);
+
 const perGen = tally((r) => r.id.replace(/-\d{3}$/, ''));
 const short = ALL_GENERATORS.filter((g) => (perGen[g.key] ?? 0) < 6).map((g) => `${g.key}=${perGen[g.key] ?? 0}`);
 
@@ -41,6 +45,7 @@ console.log('format', tally((r) => r.format));
 console.log('level×format', tally((r) => `${r.level} / ${r.format}`));
 console.log('level×difficulty', tally((r) => `${r.level} / ${r.difficulty}`));
 console.log('PG key letter', tally((r) => (r.format === 'pilihan_ganda' ? r.correct_answer : '-')));
+console.log('kisi × format (Kab/Prov)', tally((r) => (r.kisi && r.level !== 'Nasional' ? `${r.kisi} / ${r.format}` : '-')));
 console.log('distinct subtopics', new Set(rows.map((r) => r.subtopic)).size);
 console.log('generators with < 6 questions:', short.length ? short.join(', ') : 'none');
 console.log(errors.length ? `ERRORS (${errors.length}):\n` + errors.slice(0, 40).join('\n') : 'OK: no validation errors');
