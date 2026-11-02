@@ -1,0 +1,16 @@
+services:
+  olimpiade-sd:
+    build: .
+    container_name: olimpiade-sd
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "127.0.0.1:3020:3000"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

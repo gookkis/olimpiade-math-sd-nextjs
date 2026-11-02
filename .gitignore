@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# SQLite database (runtime data, jangan di-commit)
+data/*.db
+data/*.db-wal
+data/*.db-shm
