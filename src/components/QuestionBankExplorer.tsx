@@ -12,7 +12,7 @@ import {
   Database,
   Sparkles,
 } from 'lucide-react';
-import { COMPETITION_LEVELS, OlympiadQuestion, OLYMPIAD_TOPICS, QUESTION_BANK } from '../data/questionBank';
+import { COMPETITION_LEVELS, KISI_LOMBA_SD, OlympiadQuestion, OLYMPIAD_TOPICS, QUESTION_BANK } from '../data/questionBank';
 import { GeminiTutorDrawer } from './GeminiTutorDrawer';
 
 interface QuestionBankExplorerProps {
@@ -25,6 +25,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
   const [selectedTopic, setSelectedTopic] = useState<string>('Semua');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('Semua');
   const [selectedLevel, setSelectedLevel] = useState<string>('Semua');
+  const [selectedKisi, setSelectedKisi] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(15);
@@ -48,6 +49,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
       if (selectedTopic !== 'Semua') query.set('topic', selectedTopic);
       if (selectedDifficulty !== 'Semua') query.set('difficulty', selectedDifficulty);
       if (selectedLevel !== 'Semua') query.set('level', selectedLevel);
+      if (selectedKisi !== 'Semua') query.set('kisi', selectedKisi);
       if (searchQuery.trim()) query.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/questions?${query.toString()}`);
@@ -70,7 +72,7 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
 
   useEffect(() => {
     loadQuestions();
-  }, [selectedTopic, selectedDifficulty, selectedLevel, page]);
+  }, [selectedTopic, selectedDifficulty, selectedLevel, selectedKisi, page]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +108,8 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
         </div>
 
         {/* Search & Filters */}
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-          <div className="sm:col-span-2 relative">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="sm:col-span-2 lg:col-span-4 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
@@ -169,6 +171,25 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
               ))}
             </select>
           </div>
+
+          <div>
+            <select
+              value={selectedKisi}
+              onChange={(e) => {
+                setSelectedKisi(e.target.value);
+                setPage(1);
+              }}
+              title="Kisi-kisi Lomba Matematika SD (Individu)"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:outline-none focus:border-indigo-600"
+            >
+              <option value="Semua">Semua Kisi-kisi Lomba SD</option>
+              {KISI_LOMBA_SD.map((k, i) => (
+                <option key={k} value={k}>
+                  {i + 1}) {k}
+                </option>
+              ))}
+            </select>
+          </div>
         </form>
       </div>
 
@@ -205,7 +226,15 @@ export const QuestionBankExplorer: React.FC<QuestionBankExplorerProps> = ({
                     <span className="text-xs text-slate-500">{q.subtopic}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {q.kisi && (
+                      <span
+                        title="Kisi-kisi Lomba Matematika SD"
+                        className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-bold"
+                      >
+                        Kisi: {q.kisi}
+                      </span>
+                    )}
                     {q.level && (
                       <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
                         {q.level}
