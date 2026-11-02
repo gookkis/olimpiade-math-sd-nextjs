@@ -86,3 +86,17 @@ test('formatDuration formats seconds nicely', () => {
   assert.equal(formatDuration(45), '45 detik');
   assert.equal(formatDuration(125), '2m 5s');
 });
+
+test('Lomba SD scoring: correct 1 point, wrong 0, blank 0 regardless of difficulty', () => {
+  const results: QuestionResult[] = [
+    { questionId: '1', topic: 'A', difficulty: 'Mudah', isCorrect: true, timeSpentSeconds: 30, userAnswer: 'A', correctAnswer: 'A' },
+    { questionId: '2', topic: 'A', difficulty: 'HOTS', isCorrect: true, timeSpentSeconds: 30, userAnswer: '12', correctAnswer: '12' },
+    { questionId: '3', topic: 'B', difficulty: 'Sedang', isCorrect: false, timeSpentSeconds: 30, userAnswer: 'B', correctAnswer: 'C' },
+    { questionId: '4', topic: 'B', difficulty: 'HOTS', isCorrect: false, timeSpentSeconds: 30, userAnswer: '', correctAnswer: '7' },
+  ];
+  const summary = calculateOlympiadScore(results, 'PERCENTAGE');
+  assert.equal(summary.rawScore, 2);
+  assert.equal(summary.maxPossibleScore, 4);
+  assert.equal(summary.wrongCount, 1);
+  assert.equal(summary.unansweredCount, 1);
+});
