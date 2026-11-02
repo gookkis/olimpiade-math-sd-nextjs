@@ -1,3 +1,5 @@
+import type { ScoringModel } from '../utils/olympiadRules';
+
 export interface SimilarPracticeQuestion {
   id: string;
   question: string;
@@ -537,6 +539,8 @@ export interface ExamPreset {
   blueprint?: 'lomba-sd';
   /** Kisi-kisi shown on the preset card. */
   kisiKisi?: readonly string[];
+  /** Scoring rule; defaults to OSN_2026_WEIGHTED. */
+  scoringModel?: ScoringModel;
 }
 
 /** Kisi-kisi Lomba Matematika SD (individu). Keep in sync with server/bank/kisi.ts. */
@@ -562,6 +566,7 @@ export const EXAM_PRESETS: ExamPreset[] = [
     targetLevel: 'SD Kelas 4, 5, 6',
     blueprint: 'lomba-sd',
     kisiKisi: KISI_LOMBA_SD,
+    scoringModel: 'PERCENTAGE', // Benar 1, salah 0, kosong 0
   },
   {
     id: 'osn-sd-kabupaten',

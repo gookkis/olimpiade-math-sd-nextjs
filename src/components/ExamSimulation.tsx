@@ -164,7 +164,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
       };
     });
 
-    const summary = calculateOlympiadScore(results, 'OSN_2026_WEIGHTED');
+    const summary = calculateOlympiadScore(results, selectedPreset.scoringModel ?? 'OSN_2026_WEIGHTED');
 
     const attempt: UserExamAttempt = {
       id: `attempt-${Date.now()}`,
@@ -272,7 +272,11 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span><strong>Benar: 1 poin × bobot</strong> (Mudah 1 · Sedang 1,25 · Sukar 1,5), <strong>Salah/Kosong: 0</strong></span>
+              {selectedPreset.scoringModel === 'PERCENTAGE' ? (
+                <span><strong>Benar: 1 poin</strong>, <strong>Salah: 0</strong>, <strong>Tidak menjawab: 0</strong> — tidak ada nilai minus, jadi isi semua soal.</span>
+              ) : (
+                <span><strong>Benar: 1 poin × bobot</strong> (Mudah 1 · Sedang 1,25 · Sukar 1,5), <strong>Salah/Kosong: 0</strong></span>
+              )}
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />

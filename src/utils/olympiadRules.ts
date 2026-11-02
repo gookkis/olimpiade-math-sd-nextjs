@@ -30,6 +30,7 @@ export interface SimulationSummary {
   scoringModel?: ScoringModel;
 }
 
+/** PERCENTAGE = flat: every correct answer 1 point, wrong/blank 0 (name kept for saved attempts). */
 export type ScoringModel = 'OSN_2026_WEIGHTED' | 'OSN_STANDARD' | 'PERCENTAGE';
 
 /** OSN SD 2026: a correct answer scores 1 point × difficulty weight; wrong/blank score 0. */
@@ -37,7 +38,7 @@ export const OSN_2026_WEIGHTS: Record<string, number> = { Mudah: 1, Sedang: 1.25
 
 export function scoringRuleLabel(model?: ScoringModel): string {
   if (model === 'OSN_2026_WEIGHTED') return 'Benar × bobot (Mudah 1 · Sedang 1,25 · Sukar 1,5), salah/kosong 0';
-  if (model === 'PERCENTAGE') return '1 poin per jawaban benar';
+  if (model === 'PERCENTAGE') return 'Benar 1 poin, salah/kosong 0';
   return '+4 Benar, -1 Salah';
 }
 
