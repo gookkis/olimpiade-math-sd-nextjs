@@ -90,4 +90,10 @@ export function initDatabase() {
     db.exec(`ALTER TABLE questions ADD COLUMN level TEXT NOT NULL DEFAULT 'Kabupaten/Kota'`);
   }
   db.exec('CREATE INDEX IF NOT EXISTS idx_questions_level ON questions(level)');
+
+  // Migration: "Lomba Matematika SD" kisi-kisi category (NULL = outside the kisi-kisi)
+  if (!questionCols.some((c) => c.name === 'kisi')) {
+    db.exec('ALTER TABLE questions ADD COLUMN kisi TEXT');
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_questions_kisi ON questions(kisi)');
 }

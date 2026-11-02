@@ -57,7 +57,8 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
     let questionsToUse: OlympiadQuestion[] = [];
     try {
       const levelParam = preset.level ? `&level=${encodeURIComponent(preset.level)}` : '';
-      const res = await fetch(`/api/questions/exam?count=${count}${levelParam}`);
+      const blueprintParam = preset.blueprint ? `&blueprint=${preset.blueprint}` : '';
+      const res = await fetch(`/api/questions/exam?count=${count}${levelParam}${blueprintParam}`);
       const data = await res.json();
       if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
         questionsToUse = data.questions;
@@ -153,7 +154,8 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
 
       return {
         questionId: q.id,
-        topic: q.topic,
+        // Kisi-kisi presets report mastery per kisi category instead of per broad topic.
+        topic: selectedPreset.blueprint && q.kisi ? q.kisi : q.topic,
         difficulty: q.difficulty,
         isCorrect,
         timeSpentSeconds: timeSpent,
@@ -236,6 +238,20 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
 
                   <h3 className="font-bold text-base text-slate-900 mb-1">{preset.name}</h3>
                   <p className="text-xs text-slate-600 mb-3 leading-relaxed">{preset.description}</p>
+
+                  {preset.kisiKisi && (
+                    <div className="mb-3">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Kisi-kisi Soal</span>
+                      <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-700">
+                        {preset.kisiKisi.map((k, i) => (
+                          <li key={k} className="flex gap-1.5">
+                            <span className="font-bold text-indigo-600">{i + 1})</span>
+                            <span>{k}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between text-xs pt-3 border-t border-slate-100 text-slate-500">
                     <span>Jumlah: <strong>{preset.questionCount} Soal</strong></span>
@@ -381,7 +397,9 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
                   </span>
                   <div>
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                      {activeQuestion.topic}
+                      {selectedPreset.blueprint
+                        ? `${activeQuestion.format === 'isian' ? 'Bagian B · Isian Singkat' : 'Bagian A · Pilihan Ganda'} — ${activeQuestion.kisi ?? activeQuestion.topic}`
+                        : activeQuestion.topic}
                     </span>
                     <span className="text-xs text-indigo-700 font-medium">
                       {activeQuestion.subtopic}

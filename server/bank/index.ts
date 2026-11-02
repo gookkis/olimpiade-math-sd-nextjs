@@ -4,12 +4,14 @@ import { aljabar } from './aljabar';
 import { geometri } from './geometri';
 import { kombinatorika } from './kombinatorika';
 import { logika } from './logika';
+import { lomba } from './lomba';
+import { kisiOf } from './kisi';
 
 /** Bump whenever generators change so existing databases are re-seeded. */
-export const QUESTION_BANK_VERSION = '2026.11-v3-osn-komposisi';
+export const QUESTION_BANK_VERSION = '2026.11-v4-kisi-lomba-sd';
 export const TARGET_TOTAL = 1500;
 
-const BASE_GENERATORS: Generator[] = [...bilangan, ...aljabar, ...geometri, ...kombinatorika, ...logika];
+const BASE_GENERATORS: Generator[] = [...bilangan, ...aljabar, ...geometri, ...kombinatorika, ...logika, ...lomba];
 
 /**
  * OSN SD 2026 composition: OSN-K = 8 mudah / 14 sedang / 8 sukar (pilihan ganda),
@@ -39,10 +41,24 @@ function variantOf(key: string, level: Generator['level'], diff: Generator['diff
   return { ...g, key: `${g.key}-${suffix}`, level, diff };
 }
 
+/**
+ * Extra variants so every "Lomba Matematika SD" kisi-kisi category has both multiple-choice
+ * (Kabupaten/Kota) and short-answer (Provinsi) items.
+ */
+const LOMBA_VARIANTS: [string, Generator['level'], Generator['diff'], string][] = [
+  ['pec-persen-cerita', 'Provinsi', 'Mudah', 'prov'],
+  ['bd-gabungan', 'Provinsi', 'Sedang', 'prov'],
+  ['br-tabung', 'Provinsi', 'Sedang', 'prov'],
+  ['stat-diagram-lingkaran', 'Provinsi', 'Sedang', 'prov'],
+  ['pec-harga-awal', 'Kabupaten/Kota', 'HOTS', 'kab'],
+  ['stat-rata-gabungan', 'Kabupaten/Kota', 'HOTS', 'kab'],
+];
+
 export const ALL_GENERATORS: Generator[] = [
   ...BASE_GENERATORS,
   ...PROV_TO_KAB_HARD.map((k) => variantOf(k, 'Kabupaten/Kota', 'HOTS', 'kab')),
   ...KAB_TO_PROV_EASY.map((k) => variantOf(k, 'Provinsi', 'Mudah', 'prov')),
+  ...LOMBA_VARIANTS.map(([k, level, diff, suffix]) => variantOf(k, level, diff, suffix)),
 ];
 
 /** Difficulty mix per level (fractions), following the OSN SD 2026 blueprint. */
@@ -57,6 +73,8 @@ export interface QuestionRow {
   subtopic: string;
   difficulty: string;
   level: string;
+  /** "Lomba Matematika SD" kisi-kisi category, or null when the item is outside it. */
+  kisi: string | null;
   format: 'pilihan_ganda' | 'isian';
   question: string;
   options: string; // JSON
@@ -140,6 +158,7 @@ export function buildQuestionBank(total = TARGET_TOTAL): QuestionRow[] {
           subtopic: g.sub,
           difficulty: g.diff,
           level: g.level,
+          kisi: kisiOf(g.key),
           format: main.format,
           question: p.q,
           options: JSON.stringify(main.options),

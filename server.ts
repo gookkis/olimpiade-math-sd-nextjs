@@ -7,6 +7,7 @@ import { GoogleGenAI } from '@google/genai';
 import { db, initDatabase } from './server/db';
 import { seedQuestionsIfEmpty } from './server/seedQuestions';
 import { LEVEL_DIFFICULTY_MIX } from './server/bank';
+import { selectLombaSdPaper } from './server/bank/lombaExam';
 
 dotenv.config();
 
@@ -242,7 +243,7 @@ app.get('/api/questions/stats', (_req, res) => {
 // Query Questions with filter & pagination
 app.get('/api/questions', (req, res) => {
   try {
-    const { topic, difficulty, level, search, page = '1', limit = '20' } = req.query;
+    const { topic, difficulty, level, kisi, search, page = '1', limit = '20' } = req.query;
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20));
     const offset = (pageNum - 1) * limitNum;
@@ -261,6 +262,10 @@ app.get('/api/questions', (req, res) => {
     if (level && level !== 'Semua') {
       conditions.push('level = ?');
       params.push(level);
+    }
+    if (kisi && kisi !== 'Semua') {
+      conditions.push('kisi = ?');
+      params.push(kisi);
     }
     if (search && (search as string).trim()) {
       conditions.push('(question LIKE ? OR subtopic LIKE ? OR explanation LIKE ? OR tips_trik LIKE ?)');
@@ -282,6 +287,7 @@ app.get('/api/questions', (req, res) => {
       subtopic: r.subtopic,
       difficulty: r.difficulty,
       level: r.level,
+      kisi: r.kisi ?? undefined,
       format: r.format,
       question: r.question,
       options: r.options ? JSON.parse(r.options) : [],
@@ -310,11 +316,14 @@ app.get('/api/questions', (req, res) => {
 app.get('/api/questions/exam', (req, res) => {
   try {
     const count = Math.min(60, Math.max(1, parseInt(req.query.count as string, 10) || 10));
+    const blueprint = typeof req.query.blueprint === 'string' ? req.query.blueprint : null;
     const level = typeof req.query.level === 'string' && req.query.level !== 'Semua' ? req.query.level : null;
 
-    const pool: any[] = level
-      ? db.prepare('SELECT * FROM questions WHERE level = ? ORDER BY RANDOM()').all(level)
-      : db.prepare('SELECT * FROM questions ORDER BY RANDOM()').all();
+    const pool: any[] = blueprint === 'lomba-sd'
+      ? db.prepare('SELECT * FROM questions WHERE kisi IS NOT NULL ORDER BY RANDOM()').all()
+      : level
+        ? db.prepare('SELECT * FROM questions WHERE level = ? ORDER BY RANDOM()').all(level)
+        : db.prepare('SELECT * FROM questions ORDER BY RANDOM()').all();
 
     // Difficulty quotas from the level blueprint (largest-remainder rounding).
     const mix = level ? LEVEL_DIFFICULTY_MIX[level] : undefined;
@@ -356,7 +365,10 @@ app.get('/api/questions/exam', (req, res) => {
     }
 
     const rank: Record<string, number> = { Mudah: 0, Sedang: 1, HOTS: 2 };
-    const selectedQuestions = chosen.sort((x, y) => (rank[x.difficulty] ?? 1) - (rank[y.difficulty] ?? 1));
+    // "Lomba Matematika SD": 20 PG + 10 isian, 5 questions per kisi-kisi category.
+    const selectedQuestions = blueprint === 'lomba-sd'
+      ? selectLombaSdPaper(pool)
+      : chosen.sort((x, y) => (rank[x.difficulty] ?? 1) - (rank[y.difficulty] ?? 1));
 
     const questions = selectedQuestions.map((r: any) => ({
       id: r.id,
@@ -364,6 +376,7 @@ app.get('/api/questions/exam', (req, res) => {
       subtopic: r.subtopic,
       difficulty: r.difficulty,
       level: r.level,
+      kisi: blueprint === 'lomba-sd' ? r.kisi ?? undefined : undefined,
       format: r.format,
       question: r.question,
       options: r.options ? JSON.parse(r.options) : [],

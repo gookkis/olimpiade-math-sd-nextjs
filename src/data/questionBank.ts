@@ -14,6 +14,8 @@ export interface OlympiadQuestion {
   difficulty: 'Mudah' | 'Sedang' | 'HOTS';
   /** Competition level the item is modelled on (OSN/KSN & IYF tiers). */
   level?: 'Kabupaten/Kota' | 'Provinsi' | 'Nasional';
+  /** Kisi-kisi category of the "Lomba Matematika SD" (see KISI_LOMBA_SD). */
+  kisi?: string;
   format: 'pilihan_ganda' | 'isian';
   question: string;
   visualDiagram?: string; // Optional ASCII or description
@@ -531,11 +533,36 @@ export interface ExamPreset {
   targetLevel: string;
   /** Restrict questions to one competition level; omitted = mixed. */
   level?: 'Kabupaten/Kota' | 'Provinsi' | 'Nasional';
+  /** Server-side paper blueprint; 'lomba-sd' = 20 PG + 10 isian following the kisi-kisi. */
+  blueprint?: 'lomba-sd';
+  /** Kisi-kisi shown on the preset card. */
+  kisiKisi?: readonly string[];
 }
+
+/** Kisi-kisi Lomba Matematika SD (individu). Keep in sync with server/bank/kisi.ts. */
+export const KISI_LOMBA_SD = [
+  'Operasi Hitung Pecahan & Persen',
+  'Teori Bilangan (FPB, KPK, Sifat Keterbagian)',
+  'Keliling & Luas Bangun Datar',
+  'Bangun Ruang Sederhana',
+  'Rata-rata, Median, Modus & Diagram',
+  'Pola Bilangan & Kaidah Pencacahan',
+] as const;
 
 export const COMPETITION_LEVELS = ['Kabupaten/Kota', 'Provinsi', 'Nasional'] as const;
 
 export const EXAM_PRESETS: ExamPreset[] = [
+  {
+    id: 'lomba-matematika-sd',
+    name: 'Simulasi Lomba Matematika SD (Individu)',
+    badge: 'Sesuai Kisi-kisi',
+    durationMinutes: 90,
+    questionCount: 30,
+    description: 'Format lomba individu online: 20 soal pilihan ganda + 10 soal isian singkat dalam 90 menit. Setiap kisi-kisi muncul 5 soal: pecahan & persen, teori bilangan, bangun datar, bangun ruang, statistika & diagram, pola & pencacahan.',
+    targetLevel: 'SD Kelas 4, 5, 6',
+    blueprint: 'lomba-sd',
+    kisiKisi: KISI_LOMBA_SD,
+  },
   {
     id: 'osn-sd-kabupaten',
     name: 'Simulasi OSN-K / IYF Tingkat Daerah',
