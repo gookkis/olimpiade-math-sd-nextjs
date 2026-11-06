@@ -535,8 +535,11 @@ export interface ExamPreset {
   targetLevel: string;
   /** Restrict questions to one competition level; omitted = mixed. */
   level?: 'Kabupaten/Kota' | 'Provinsi' | 'Nasional';
-  /** Server-side paper blueprint; 'lomba-sd' = 20 PG + 10 isian following the kisi-kisi. */
-  blueprint?: 'lomba-sd';
+  /**
+   * Server-side paper blueprint: 'lomba-sd' = 20 PG + 10 isian following the kisi-kisi,
+   * 'obor-langit-c' = Obor Langit Kategori C, 30 PG + 2 esai.
+   */
+  blueprint?: 'lomba-sd' | 'obor-langit-c';
   /** Kisi-kisi shown on the preset card. */
   kisiKisi?: readonly string[];
   /** Scoring rule; defaults to OSN_2026_WEIGHTED. */
@@ -553,9 +556,35 @@ export const KISI_LOMBA_SD = [
   'Pola Bilangan & Kaidah Pencacahan',
 ] as const;
 
+/** Kisi-kisi Olimpiade Obor Langit Kategori C (SD/MI kelas 5–6). Keep in sync with server/bank/oborLangit.ts. */
+export const KISI_OBOR_LANGIT_C = [
+  'Bilangan: Operasi Bilangan Bulat',
+  'FPB & KPK dalam Soal Cerita',
+  'Pecahan: Operasi Semua Bentuk Pecahan',
+  'Persentase: Diskon, Untung-Rugi, Bunga',
+  'Perbandingan: Rasio & Skala',
+  'Kecepatan: Jarak, Waktu & Kecepatan',
+  'Geometri: Luas Bangun Datar',
+  'Bangun Ruang: Volume & Luas Permukaan',
+  'Statistika: Mean, Median, Modus',
+  'Peluang Sederhana',
+] as const;
+
 export const COMPETITION_LEVELS = ['Kabupaten/Kota', 'Provinsi', 'Nasional'] as const;
 
 export const EXAM_PRESETS: ExamPreset[] = [
+  {
+    id: 'obor-langit-c',
+    name: 'Simulasi Olimpiade Obor Langit — Kategori C',
+    badge: 'SD/MI Kelas 5–6',
+    durationMinutes: 40,
+    questionCount: 32,
+    description: '30 soal pilihan ganda + 2 soal esai dalam 40 menit. Setiap kisi-kisi muncul 3 soal pilihan ganda; 2 soal esai diambil dari dua kisi-kisi berbeda. Penilaian: benar +4, salah −1, kosong 0, esai maksimal 10 poin.',
+    targetLevel: 'SD/MI Kelas 5–6',
+    blueprint: 'obor-langit-c',
+    kisiKisi: KISI_OBOR_LANGIT_C,
+    scoringModel: 'OBOR_LANGIT',
+  },
   {
     id: 'lomba-matematika-sd',
     name: 'Simulasi Lomba Matematika SD (Individu)',
@@ -567,36 +596,6 @@ export const EXAM_PRESETS: ExamPreset[] = [
     blueprint: 'lomba-sd',
     kisiKisi: KISI_LOMBA_SD,
     scoringModel: 'PERCENTAGE', // Benar 1, salah 0, kosong 0
-  },
-  {
-    id: 'osn-sd-kabupaten',
-    name: 'Simulasi OSN-K / IYF Tingkat Daerah',
-    badge: 'Kabupaten/Kota',
-    durationMinutes: 60,
-    questionCount: 30,
-    description: 'Format OSN-K SD: 30 soal pilihan ganda (8 mudah, 14 sedang, 8 sukar) dalam 60 menit, skor berbobot tanpa nilai minus. Setara babak seleksi daerah IYF JSIT.',
-    targetLevel: 'SD Kelas 4, 5, 6',
-    level: 'Kabupaten/Kota',
-  },
-  {
-    id: 'osn-sd-provinsi',
-    name: 'Simulasi OSN-P / IYF Tingkat Wilayah',
-    badge: 'Provinsi',
-    durationMinutes: 60,
-    questionCount: 20,
-    description: 'Format OSN-P SD: 20 soal isian singkat (4 mudah, 8 sedang, 8 sukar) dalam 60 menit. Jawaban berupa bilangan bulat.',
-    targetLevel: 'Lolos Kabupaten/Kota',
-    level: 'Provinsi',
-  },
-  {
-    id: 'osn-sd-nasional',
-    name: 'Simulasi OSN Nasional (Teori I)',
-    badge: 'Nasional',
-    durationMinutes: 90,
-    questionCount: 25,
-    description: 'Latihan babak teori nasional: 25 soal isian singkat tingkat HOTS (teori bilangan, kombinatorika, geometri, logika).',
-    targetLevel: 'Lolos Provinsi / Pelatnas',
-    level: 'Nasional',
   },
   {
     id: 'campuran-semua-tingkat',

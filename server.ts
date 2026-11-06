@@ -8,6 +8,7 @@ import { db, initDatabase } from './server/db';
 import { seedQuestionsIfEmpty } from './server/seedQuestions';
 import { LEVEL_DIFFICULTY_MIX } from './server/bank';
 import { selectLombaSdPaper } from './server/bank/lombaExam';
+import { selectOborLangitPaper } from './server/bank/oborLangit';
 
 dotenv.config();
 
@@ -321,6 +322,8 @@ app.get('/api/questions/exam', (req, res) => {
 
     const pool: any[] = blueprint === 'lomba-sd'
       ? db.prepare('SELECT * FROM questions WHERE kisi IS NOT NULL ORDER BY RANDOM()').all()
+      : blueprint === 'obor-langit-c'
+        ? db.prepare("SELECT * FROM questions WHERE level != 'Nasional' ORDER BY RANDOM()").all()
       : level
         ? db.prepare('SELECT * FROM questions WHERE level = ? ORDER BY RANDOM()').all(level)
         : db.prepare('SELECT * FROM questions ORDER BY RANDOM()').all();
@@ -366,8 +369,11 @@ app.get('/api/questions/exam', (req, res) => {
 
     const rank: Record<string, number> = { Mudah: 0, Sedang: 1, HOTS: 2 };
     // "Lomba Matematika SD": 20 PG + 10 isian, 5 questions per kisi-kisi category.
+    // "Obor Langit" Kategori C: 30 PG (3 per kisi-kisi) + 2 esai.
     const selectedQuestions = blueprint === 'lomba-sd'
       ? selectLombaSdPaper(pool)
+      : blueprint === 'obor-langit-c'
+        ? selectOborLangitPaper(pool)
       : chosen.sort((x, y) => (rank[x.difficulty] ?? 1) - (rank[y.difficulty] ?? 1));
 
     const questions = selectedQuestions.map((r: any) => ({
@@ -376,7 +382,7 @@ app.get('/api/questions/exam', (req, res) => {
       subtopic: r.subtopic,
       difficulty: r.difficulty,
       level: r.level,
-      kisi: blueprint === 'lomba-sd' ? r.kisi ?? undefined : undefined,
+      kisi: blueprint === 'lomba-sd' ? r.kisi ?? undefined : blueprint === 'obor-langit-c' ? r.oborKisi : undefined,
       format: r.format,
       question: r.question,
       options: r.options ? JSON.parse(r.options) : [],

@@ -6,6 +6,8 @@ export interface QuestionResult {
   timeSpentSeconds: number;
   userAnswer?: string;
   correctAnswer: string;
+  /** Needed by OBOR_LANGIT, where short-answer (esai) items are scored differently. */
+  format?: 'pilihan_ganda' | 'isian';
 }
 
 export interface SimulationSummary {
@@ -30,8 +32,14 @@ export interface SimulationSummary {
   scoringModel?: ScoringModel;
 }
 
-/** PERCENTAGE = flat: every correct answer 1 point, wrong/blank 0 (name kept for saved attempts). */
-export type ScoringModel = 'OSN_2026_WEIGHTED' | 'OSN_STANDARD' | 'PERCENTAGE';
+/**
+ * PERCENTAGE = flat: every correct answer 1 point, wrong/blank 0 (name kept for saved attempts).
+ * OBOR_LANGIT = Olimpiade Obor Langit: PG +4 / −1 / 0, esai (isian) up to 10 points each.
+ */
+export type ScoringModel = 'OSN_2026_WEIGHTED' | 'OSN_STANDARD' | 'PERCENTAGE' | 'OBOR_LANGIT';
+
+/** Obor Langit points. Esai answers are auto-checked on the final answer only (all or nothing). */
+export const OBOR_LANGIT_POINTS = { benar: 4, salah: -1, kosong: 0, esai: 10 };
 
 /** OSN SD 2026: a correct answer scores 1 point × difficulty weight; wrong/blank score 0. */
 export const OSN_2026_WEIGHTS: Record<string, number> = { Mudah: 1, Sedang: 1.25, HOTS: 1.5 };
@@ -39,6 +47,7 @@ export const OSN_2026_WEIGHTS: Record<string, number> = { Mudah: 1, Sedang: 1.25
 export function scoringRuleLabel(model?: ScoringModel): string {
   if (model === 'OSN_2026_WEIGHTED') return 'Benar × bobot (Mudah 1 · Sedang 1,25 · Sukar 1,5), salah/kosong 0';
   if (model === 'PERCENTAGE') return 'Benar 1 poin, salah/kosong 0';
+  if (model === 'OBOR_LANGIT') return 'PG: benar +4, salah −1, kosong 0 · Esai maks 10 poin';
   return '+4 Benar, -1 Salah';
 }
 
@@ -109,6 +118,18 @@ export function calculateOlympiadScore(
     }
     rawScore = Math.round(rawScore * 100) / 100;
     maxPossibleScore = Math.round(maxPossibleScore * 100) / 100;
+  } else if (scoringModel === 'OBOR_LANGIT') {
+    const P = OBOR_LANGIT_POINTS;
+    for (const item of results) {
+      const blank = !item.userAnswer || item.userAnswer.trim() === '';
+      if (item.format === 'isian') {
+        maxPossibleScore += P.esai;
+        if (!blank && item.isCorrect) rawScore += P.esai;
+      } else {
+        maxPossibleScore += P.benar;
+        rawScore += blank ? P.kosong : item.isCorrect ? P.benar : P.salah;
+      }
+    }
   } else if (scoringModel === 'OSN_STANDARD') {
     rawScore = correctCount * 4 - wrongCount * 1;
     maxPossibleScore = totalQuestions * 4;
@@ -117,7 +138,10 @@ export function calculateOlympiadScore(
     maxPossibleScore = totalQuestions;
   }
 
-  const percentageScore = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+  // Obor Langit: wrong answers cost points, so the percentage follows the score (floored at 0).
+  const percentageScore = scoringModel === 'OBOR_LANGIT'
+    ? (maxPossibleScore > 0 ? Math.round((Math.max(0, rawScore) / maxPossibleScore) * 100) : 0)
+    : totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
   const avgTimePerQuestionSeconds = totalQuestions > 0 ? Math.round(totalTimeSpentSeconds / totalQuestions) : 0;
 
   // Medal determination

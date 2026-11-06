@@ -100,3 +100,23 @@ test('Lomba SD scoring: correct 1 point, wrong 0, blank 0 regardless of difficul
   assert.equal(summary.wrongCount, 1);
   assert.equal(summary.unansweredCount, 1);
 });
+
+test('OBOR_LANGIT: PG +4/-1/0, esai 10 points, percentage follows the score', () => {
+  const pg = (id: string, ans: string, key: string): QuestionResult => ({
+    questionId: id, topic: 'Pecahan', difficulty: 'Sedang', isCorrect: ans === key, timeSpentSeconds: 40,
+    userAnswer: ans, correctAnswer: key, format: 'pilihan_ganda',
+  });
+  const esai = (id: string, ans: string, key: string): QuestionResult => ({
+    questionId: id, topic: 'Peluang', difficulty: 'HOTS', isCorrect: ans === key, timeSpentSeconds: 200,
+    userAnswer: ans, correctAnswer: key, format: 'isian',
+  });
+  const results = [pg('1', 'A', 'A'), pg('2', 'A', 'A'), pg('3', 'B', 'C'), pg('4', '', 'D'), esai('5', '12', '12'), esai('6', '7', '8')];
+  const s = calculateOlympiadScore(results, 'OBOR_LANGIT');
+  assert.equal(s.rawScore, 4 + 4 - 1 + 0 + 10 + 0);
+  assert.equal(s.maxPossibleScore, 4 * 4 + 2 * 10);
+  assert.equal(s.percentageScore, Math.round((17 / 36) * 100));
+
+  const allWrong = calculateOlympiadScore([pg('1', 'B', 'A'), pg('2', 'B', 'A')], 'OBOR_LANGIT');
+  assert.equal(allWrong.rawScore, -2);
+  assert.equal(allWrong.percentageScore, 0);
+});

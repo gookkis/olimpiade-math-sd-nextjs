@@ -5,13 +5,14 @@ import { geometri } from './geometri';
 import { kombinatorika } from './kombinatorika';
 import { logika } from './logika';
 import { lomba } from './lomba';
+import { obor } from './obor';
 import { kisiOf } from './kisi';
 
 /** Bump whenever generators change so existing databases are re-seeded. */
-export const QUESTION_BANK_VERSION = '2026.11-v4-kisi-lomba-sd';
+export const QUESTION_BANK_VERSION = '2026.11-v5-obor-langit-c';
 export const TARGET_TOTAL = 1500;
 
-const BASE_GENERATORS: Generator[] = [...bilangan, ...aljabar, ...geometri, ...kombinatorika, ...logika, ...lomba];
+const BASE_GENERATORS: Generator[] = [...bilangan, ...aljabar, ...geometri, ...kombinatorika, ...logika, ...lomba, ...obor];
 
 /**
  * OSN SD 2026 composition: OSN-K = 8 mudah / 14 sedang / 8 sukar (pilihan ganda),
@@ -52,6 +53,10 @@ const LOMBA_VARIANTS: [string, Generator['level'], Generator['diff'], string][] 
   ['stat-diagram-lingkaran', 'Provinsi', 'Sedang', 'prov'],
   ['pec-harga-awal', 'Kabupaten/Kota', 'HOTS', 'kab'],
   ['stat-rata-gabungan', 'Kabupaten/Kota', 'HOTS', 'kab'],
+  // Obor Langit Kategori C: short-answer (esai) items for the new kisi-kisi topics.
+  ['ob-bunga-tunggal', 'Provinsi', 'Sedang', 'prov'],
+  ['ob-frekuensi-harapan', 'Provinsi', 'Sedang', 'prov'],
+  ['ob-bulat-cerita', 'Provinsi', 'Sedang', 'prov'],
 ];
 
 export const ALL_GENERATORS: Generator[] = [
