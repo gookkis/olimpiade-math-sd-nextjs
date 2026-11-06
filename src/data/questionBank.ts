@@ -587,7 +587,7 @@ export const EXAM_PRESETS: ExamPreset[] = [
   },
   {
     id: 'lomba-matematika-sd',
-    name: 'Simulasi Lomba Matematika SD (Individu)',
+    name: 'Simulasi IYF Tingkat Nasional',
     badge: 'Sesuai Kisi-kisi',
     durationMinutes: 90,
     questionCount: 30,
