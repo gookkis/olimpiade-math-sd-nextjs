@@ -31,6 +31,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
 }) => {
   // Setup state vs In-exam state
   const [selectedPreset, setSelectedPreset] = useState<ExamPreset>(EXAM_PRESETS[0]);
+  const isObor = selectedPreset.blueprint === 'obor-langit-c';
   const [customMinutes, setCustomMinutes] = useState(60);
   const [customQuestionCount, setCustomQuestionCount] = useState(10);
   const [isExamStarted, setIsExamStarted] = useState(false);
@@ -161,6 +162,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
         timeSpentSeconds: timeSpent,
         userAnswer: userAns,
         correctAnswer: q.correctAnswer,
+        format: q.format,
       };
     });
 
@@ -201,7 +203,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
               Simulasi Ujian Olimpiade Matematika SD
             </h1>
             <p className="text-indigo-100 text-sm sm:text-base leading-relaxed">
-              Uji kemampuan dengan sistem waktu riil, format soal berjenjang OSN SD & IYF JSIT (Kabupaten/Kota, Provinsi, Nasional), serta evaluasi otomatis per topik.
+              Uji kemampuan dengan sistem waktu riil, format soal sesuai kisi-kisi lomba (Olimpiade Obor Langit, Lomba Matematika SD), serta evaluasi otomatis per kisi-kisi.
             </p>
           </div>
         </div>
@@ -272,7 +274,9 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              {selectedPreset.scoringModel === 'PERCENTAGE' ? (
+              {selectedPreset.scoringModel === 'OBOR_LANGIT' ? (
+                <span><strong>PG: Benar +4</strong>, <strong>Salah −1</strong>, <strong>Kosong 0</strong> · <strong>Esai: maks 10 poin/soal</strong> — jangan menebak asal di pilihan ganda.</span>
+              ) : selectedPreset.scoringModel === 'PERCENTAGE' ? (
                 <span><strong>Benar: 1 poin</strong>, <strong>Salah: 0</strong>, <strong>Tidak menjawab: 0</strong> — tidak ada nilai minus, jadi isi semua soal.</span>
               ) : (
                 <span><strong>Benar: 1 poin × bobot</strong> (Mudah 1 · Sedang 1,25 · Sukar 1,5), <strong>Salah/Kosong: 0</strong></span>
@@ -402,7 +406,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
                   <div>
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
                       {selectedPreset.blueprint
-                        ? `${activeQuestion.format === 'isian' ? 'Bagian B · Isian Singkat' : 'Bagian A · Pilihan Ganda'} — ${activeQuestion.kisi ?? activeQuestion.topic}`
+                        ? `${activeQuestion.format === 'isian' ? (isObor ? 'Bagian B · Esai (maks 10 poin)' : 'Bagian B · Isian Singkat') : 'Bagian A · Pilihan Ganda'} — ${activeQuestion.kisi ?? activeQuestion.topic}`
                         : activeQuestion.topic}
                     </span>
                     <span className="text-xs text-indigo-700 font-medium">
@@ -481,7 +485,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
               ) : (
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                    Tuliskan Jawaban Isian Singkat (Angka):
+                    {isObor ? 'Tuliskan Jawaban Akhir Esai (Angka):' : 'Tuliskan Jawaban Isian Singkat (Angka):'}
                   </label>
                   <div className="flex items-center gap-3 max-w-xs">
                     <input
@@ -494,6 +498,7 @@ export const ExamSimulation: React.FC<ExamSimulationProps> = ({
                   </div>
                   <p className="text-[11px] text-slate-400 mt-2">
                     Contoh: Jika hasilnya 59, cukup ketikkan 59 tanpa satuan.
+                    {isObor && ' Kerjakan langkahnya di Lembar Coretan; di simulasi ini esai dinilai dari jawaban akhir (benar 10 poin).'}
                   </p>
                 </div>
               )}
